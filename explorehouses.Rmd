@@ -175,6 +175,8 @@ train_cont <- train[,.SD,.SDcols = numeric_var,]
 ## Plot Bar/Histograms {.tabset}
 
 ### Numeric
+
+**Note* Create function to iterate next. **
 ```{r}
 train_cont[,1:6] %>%
   keep(is.numeric) %>% 
