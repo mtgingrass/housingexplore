@@ -1,0 +1,74 @@
+---
+title: "Housing Data Exploratory Analysis"
+author: "Mark Gingrass"
+date: "July 28, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r housing}
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT')
+sapply(load.libraries, require, character = TRUE)
+```
+
+
+## Load train/test Data
+```{r, echo = FALSE}
+# Bring in some features s characters
+train <- fread('input/train.csv',colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
+test <- fread('input/test.csv' ,colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
+```
+
+```{r}
+cat_var <- names(train)[which(sapply(train, is.character))]
+cat_car <- c(cat_var, 'BedroomAbvGr', 'HalfBath', ' KitchenAbvGr','BsmtFullBath', 'BsmtHalfBath', 'MSSubClass')
+numeric_var <- names(train)[which(sapply(train, is.numeric))]
+```
+
+## Structure of the data
+The housing data set has 1460 rows and 81 features with the target feature Sale Price.
+Note the structure of the data - treating all factors as characters for now. 
+```{r structure}
+dim(train)
+str(train)
+
+```
+
+## Dimensions
+```{r}
+dim(train)
+DT::datatable(head(train))
+```
+
+## Missing Values
+
+```{r}
+# Count NAs
+na_counts <-lapply(train, function(x) sum(is.na(x)))
+
+na_counts <- melt(na_counts)
+
+names(na_counts) <- c("Number_NAs", "Attribute")
+na_counts <- na_counts[which(na_counts$Number_NAs > 0),]
+
+na_counts$Percent_NA <- na_counts$Number_NAs/dim(train)[1]
+na_counts <- na_counts[order(-na_counts$Number_NAs),]
+
+DT::datatable((na_counts))
+```
+
+
+
+PoolQC, MiscFeature, Alley, and Fence have over 50% of data missing in training set. Most likely, I am going to remove those features completley. For the remainder, I am going to impute values. 
+
+```{r missing data_2}
+ggplot(na_counts, aes(na_counts$Attribute, na_counts$Number_NAs)) +
+  geom_point(shape = 22, colour = "black", fill = "white", size = 2, stroke = 5) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
