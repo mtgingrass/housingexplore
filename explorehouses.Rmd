@@ -9,9 +9,93 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Exploring Housing Data
 
+
+### Data Descriptions
+
+* SalePrice - the property's sale price in dollars. This is the target variable that you're trying to predict.
+* MSSubClass: The building class
+* MSZoning: The general zoning classification
+* LotFrontage: Linear feet of street connected to property
+* LotArea: Lot size in square feet
+* Street: Type of road access
+* Alley: Type of alley access
+* LotShape: General shape of property
+* LandContour: Flatness of the property
+* Utilities: Type of utilities available
+* LotConfig: Lot configuration
+* LandSlope: Slope of property
+* Neighborhood: Physical locations within Ames city limits
+* Condition1: Proximity to main road or railroad
+* Condition2: Proximity to main road or railroad (if a second is present)
+* BldgType: Type of dwelling
+* HouseStyle: Style of dwelling
+* OverallQual: Overall material and finish quality
+* OverallCond: Overall condition rating
+* YearBuilt: Original construction date
+* YearRemodAdd: Remodel date
+* RoofStyle: Type of roof
+* RoofMatl: Roof material
+* Exterior1st: Exterior covering on house
+* Exterior2nd: Exterior covering on house (if more than one material)
+* MasVnrType: Masonry veneer type
+* MasVnrArea: Masonry veneer area in square feet
+* ExterQual: Exterior material quality
+* ExterCond: Present condition of the material on the exterior
+* Foundation: Type of foundation
+* BsmtQual: Height of the basement
+* BsmtCond: General condition of the basement
+* BsmtExposure: Walkout or garden level basement walls
+* BsmtFinType1: Quality of basement finished area
+* BsmtFinSF1: Type 1 finished square feet
+* BsmtFinType2: Quality of second finished area (if present)
+* BsmtFinSF2: Type 2 finished square feet
+* BsmtUnfSF: Unfinished square feet of basement area
+* TotalBsmtSF: Total square feet of basement area
+* Heating: Type of heating
+* HeatingQC: Heating quality and condition
+* CentralAir: Central air conditioning
+* Electrical: Electrical system
+* 1stFlrSF: First Floor square feet
+* 2ndFlrSF: Second floor square feet
+* LowQualFinSF: Low quality finished square feet (all floors)
+* GrLivArea: Above grade (ground) living area square feet
+* BsmtFullBath: Basement full bathrooms
+* BsmtHalfBath: Basement half bathrooms
+* FullBath: Full bathrooms above grade
+* HalfBath: Half baths above grade
+* Bedroom: Number of bedrooms above basement level
+* Kitchen: Number of kitchens
+* KitchenQual: Kitchen quality
+* TotRmsAbvGrd: Total rooms above grade (does not include bathrooms)
+* Functional: Home functionality rating
+* Fireplaces: Number of fireplaces
+* FireplaceQu: Fireplace quality
+* GarageType: Garage location
+* GarageYrBlt: Year garage was built
+* GarageFinish: Interior finish of the garage
+* GarageCars: Size of garage in car capacity
+* GarageArea: Size of garage in square feet
+* GarageQual: Garage quality
+* GarageCond: Garage condition
+* PavedDrive: Paved driveway
+* WoodDeckSF: Wood deck area in square feet
+* OpenPorchSF: Open porch area in square feet
+* EnclosedPorch: Enclosed porch area in square feet
+* 3SsnPorch: Three season porch area in square feet
+* ScreenPorch: Screen porch area in square feet
+* PoolArea: Pool area in square feet
+* PoolQC: Pool quality
+* Fence: Fence quality
+* MiscFeature: Miscellaneous feature not covered in other categories
+* : $Value of miscellaneous feature
+* MoSold: Month Sold
+* YrSold: Year Sold
+* SaleType: Type of sale
+* SaleCondition: Condition of sale
 ```{r housing}
-load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT')
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purr')
 sapply(load.libraries, require, character = TRUE)
 ```
 
@@ -25,12 +109,12 @@ test <- fread('input/test.csv' ,colClasses=c('MiscFeature' = "character", 'PoolQ
 
 ```{r}
 cat_var <- names(train)[which(sapply(train, is.character))]
-cat_car <- c(cat_var, 'BedroomAbvGr', 'HalfBath', ' KitchenAbvGr','BsmtFullBath', 'BsmtHalfBath', 'MSSubClass')
+
 numeric_var <- names(train)[which(sapply(train, is.numeric))]
 ```
 
 ## Structure of the data
-The housing data set has 1460 rows and 81 features with the target feature Sale Price.
+The housing data set has `r dim(train)[1]` rows and `r dim(train)[2]` features with the target feature Sale Price.
 Note the structure of the data - treating all factors as characters for now. 
 ```{r structure}
 dim(train)
@@ -72,3 +156,116 @@ ggplot(na_counts, aes(na_counts$Attribute, na_counts$Number_NAs)) +
 
 ```
 
+## Count Duplicates
+```{r}
+dup_rows <- train[duplicated(train),]
+```
+There are `r dim(dup_rows)[1]` duplicated observations. 
+
+## Convert to Factors / Separate Fact from Numeric
+Looking at the data set, I believe 
+```{r}
+train[,(cat_var) := lapply(.SD, as.factor), .SDcols = cat_var]
+str(train)
+
+train_cat <- train[,.SD, .SDcols = cat_var]
+train_cont <- train[,.SD,.SDcols = numeric_var,]
+```
+
+## Plot Bar/Histograms {.tabset}
+
+### Numeric
+```{r}
+train_cont[,1:6] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cont[,7:12] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cont[,13:18] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cont[,19:24] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cont[,25:32] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cont[,33:38] %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+### Catagorical
+```{r}
+train_cat[, 1:6] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cat[, 7:12] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+train_cat[, 13:18] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+train_cat[, 19:24] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+train_cat[, 25:32] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+train_cat[, 33:38] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+train_cat[, 38:43] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+train_cat[, 1:6] %>%
+  gather() %>% 
+  ggplot(aes(value)) + stat_count() +
+    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
