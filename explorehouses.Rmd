@@ -95,7 +95,7 @@ knitr::opts_chunk$set(echo = TRUE)
 * SaleType: Type of sale
 * SaleCondition: Condition of sale
 ```{r housing}
-load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purr')
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purrr')
 sapply(load.libraries, require, character = TRUE)
 ```
 
@@ -191,36 +191,42 @@ str(train)
 **Note* Create function to iterate next. **
 ```{r}
 train_cont[,1:6] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,7:12] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,13:18] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,19:24] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,25:32] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,33:38] %>%
+  purrr::keep(is.numeric) %>%
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
