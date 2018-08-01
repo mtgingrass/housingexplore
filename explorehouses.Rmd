@@ -169,6 +169,8 @@ dup_rows <- train[duplicated(train),]
 There are `r dim(dup_rows)[1]` duplicated observations. 
 
 ## Convert to Factors / Separate Fact from Numeric {.tabset}
+
+### Convert and Create
 Convert characters to factors and create training sets for catagorial and numerical data.
 ```{r}
 train[,(cat_var) := lapply(.SD, as.factor), .SDcols = cat_var]
@@ -189,42 +191,36 @@ str(train)
 **Note* Create function to iterate next. **
 ```{r}
 train_cont[,1:6] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,7:12] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,13:18] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,19:24] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,25:32] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
     geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 train_cont[,33:38] %>%
-  keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
     facet_wrap(~ key, scales = "free") +
