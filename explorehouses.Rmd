@@ -101,31 +101,37 @@ sapply(load.libraries, require, character = TRUE)
 
 
 ## Load train/test Data
+If you have not used *fread* - it's a way to read in a file directly to a data.table as opposed to a data.frame. 
 ```{r, echo = FALSE}
 # Bring in some features s characters
 train <- fread('input/train.csv',colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
 test <- fread('input/test.csv' ,colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
 ```
 
+Track the catagorical feature names separately from the numeric feature names.
 ```{r}
 cat_var <- names(train)[which(sapply(train, is.character))]
-
 numeric_var <- names(train)[which(sapply(train, is.numeric))]
 ```
 
-## Structure of the data
+## Structure of the data {.tabset}
 The housing data set has `r dim(train)[1]` rows and `r dim(train)[2]` features with the target feature Sale Price.
-Note the structure of the data - treating all factors as characters for now. 
-```{r structure}
-dim(train)
-str(train)
+Note the structure of the data in the next tab - treating all factors as characters for now. 
 
-```
-
-## Dimensions
+### Dimensions
 ```{r}
 dim(train)
 DT::datatable(head(train))
+```
+
+
+### Structure
+```{r structure}
+# Dimensions
+dim(train)
+
+# Structure
+str(train)
 ```
 
 ## Missing Values
@@ -162,14 +168,18 @@ dup_rows <- train[duplicated(train),]
 ```
 There are `r dim(dup_rows)[1]` duplicated observations. 
 
-## Convert to Factors / Separate Fact from Numeric
-Looking at the data set, I believe 
+## Convert to Factors / Separate Fact from Numeric {.tabset}
+Convert characters to factors and create training sets for catagorial and numerical data.
 ```{r}
 train[,(cat_var) := lapply(.SD, as.factor), .SDcols = cat_var]
-str(train)
 
 train_cat <- train[,.SD, .SDcols = cat_var]
 train_cont <- train[,.SD,.SDcols = numeric_var,]
+```
+
+### Structure
+```{r}
+str(train)
 ```
 
 ## Plot Bar/Histograms {.tabset}
