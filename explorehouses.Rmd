@@ -95,7 +95,7 @@ knitr::opts_chunk$set(echo = TRUE)
 * SaleType: Type of sale
 * SaleCondition: Condition of sale
 ```{r housing}
-load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purrr')
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purrr', 'mi')
 sapply(load.libraries, require, character = TRUE)
 ```
 
@@ -283,3 +283,16 @@ train_cat[, 1:6] %>%
 
 
 ```
+
+### Missing Data2
+This plot shows the intersection of missing data as well as the populations of missing data.
+```{r}
+library(naniar)
+library(UpSetR)
+var_w_miss_data <- n_var_miss(train)
+
+train %>%
+  as_shadow_upset() %>%
+  upset()
+```
+
