@@ -1,298 +1,182 @@
 ---
-title: "Housing Data Exploratory Analysis"
+title: "Explore Housing Data using R"
 author: "Mark Gingrass"
-date: "July 28, 2018"
-output: html_document
+date: "August 6, 2018"
+output: 
+  html_document:
+    keep_md: true
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE,message=FALSE,error=FALSE,warning=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	error=FALSE,
+	message = FALSE,
+	warning = FALSE,
+	##cache = TRUE,
+	tidy = TRUE,
+	tidy.opts = list(width.cutoff = 70)
+)
 ```
 
-# Exploring Housing Data
+## Predict SalePrice 
 
+I have learned more about data pipelines from this kaggle kernel linked below. My goal is to improve upon what Aniruddha Chakraborty started.
 
-### Data Descriptions
+Some of the exploration and changes I have worked on so far include:
 
-* SalePrice - the property's sale price in dollars. This is the target variable that you're trying to predict.
-* MSSubClass: The building class
-* MSZoning: The general zoning classification
-* LotFrontage: Linear feet of street connected to property
-* LotArea: Lot size in square feet
-* Street: Type of road access
-* Alley: Type of alley access
-* LotShape: General shape of property
-* LandContour: Flatness of the property
-* Utilities: Type of utilities available
-* LotConfig: Lot configuration
-* LandSlope: Slope of property
-* Neighborhood: Physical locations within Ames city limits
-* Condition1: Proximity to main road or railroad
-* Condition2: Proximity to main road or railroad (if a second is present)
-* BldgType: Type of dwelling
-* HouseStyle: Style of dwelling
-* OverallQual: Overall material and finish quality
-* OverallCond: Overall condition rating
-* YearBuilt: Original construction date
-* YearRemodAdd: Remodel date
-* RoofStyle: Type of roof
-* RoofMatl: Roof material
-* Exterior1st: Exterior covering on house
-* Exterior2nd: Exterior covering on house (if more than one material)
-* MasVnrType: Masonry veneer type
-* MasVnrArea: Masonry veneer area in square feet
-* ExterQual: Exterior material quality
-* ExterCond: Present condition of the material on the exterior
-* Foundation: Type of foundation
-* BsmtQual: Height of the basement
-* BsmtCond: General condition of the basement
-* BsmtExposure: Walkout or garden level basement walls
-* BsmtFinType1: Quality of basement finished area
-* BsmtFinSF1: Type 1 finished square feet
-* BsmtFinType2: Quality of second finished area (if present)
-* BsmtFinSF2: Type 2 finished square feet
-* BsmtUnfSF: Unfinished square feet of basement area
-* TotalBsmtSF: Total square feet of basement area
-* Heating: Type of heating
-* HeatingQC: Heating quality and condition
-* CentralAir: Central air conditioning
-* Electrical: Electrical system
-* 1stFlrSF: First Floor square feet
-* 2ndFlrSF: Second floor square feet
-* LowQualFinSF: Low quality finished square feet (all floors)
-* GrLivArea: Above grade (ground) living area square feet
-* BsmtFullBath: Basement full bathrooms
-* BsmtHalfBath: Basement half bathrooms
-* FullBath: Full bathrooms above grade
-* HalfBath: Half baths above grade
-* Bedroom: Number of bedrooms above basement level
-* Kitchen: Number of kitchens
-* KitchenQual: Kitchen quality
-* TotRmsAbvGrd: Total rooms above grade (does not include bathrooms)
-* Functional: Home functionality rating
-* Fireplaces: Number of fireplaces
-* FireplaceQu: Fireplace quality
-* GarageType: Garage location
-* GarageYrBlt: Year garage was built
-* GarageFinish: Interior finish of the garage
-* GarageCars: Size of garage in car capacity
-* GarageArea: Size of garage in square feet
-* GarageQual: Garage quality
-* GarageCond: Garage condition
-* PavedDrive: Paved driveway
-* WoodDeckSF: Wood deck area in square feet
-* OpenPorchSF: Open porch area in square feet
-* EnclosedPorch: Enclosed porch area in square feet
-* 3SsnPorch: Three season porch area in square feet
-* ScreenPorch: Screen porch area in square feet
-* PoolArea: Pool area in square feet
-* PoolQC: Pool quality
-* Fence: Fence quality
-* MiscFeature: Miscellaneous feature not covered in other categories
-* : $Value of miscellaneous feature
-* MoSold: Month Sold
-* YrSold: Year Sold
-* SaleType: Type of sale
-* SaleCondition: Condition of sale
-```{r housing}
-load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr', 'DT', 'tidyr', 'purrr', 'mi')
-sapply(load.libraries, require, character = TRUE)
-```
+* Using data.table instead of data.frame
+* Treating outliers instead of removing them
+* Imputing data
+* Adding more dialog in some of the methods used for clarity
 
+[Lasso + GBM + XGBOOST - Top 20 % (0.12039) using R](https://www.kaggle.com/aniruddhachakraborty/lasso-gbm-xgboost-top-20-0-12039-using-r)  
 
-## Load train/test Data
-If you have not used *fread* - it's a way to read in a file directly to a data.table as opposed to a data.frame. 
-```{r, echo = FALSE}
-# Bring in some features s characters
-train <- fread('input/train.csv',colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
-test <- fread('input/test.csv' ,colClasses=c('MiscFeature' = "character", 'PoolQC' = 'character', 'Alley' = 'character'))
-```
+# Loading and data pre-processing
 
-Track the catagorical feature names separately from the numeric feature names.
+## Load data
+
 ```{r}
-cat_var <- names(train)[which(sapply(train, is.character))]
-numeric_var <- names(train)[which(sapply(train, is.numeric))]
-```
+library(data.table)
+train <- read.csv("input/train.csv",stringsAsFactors = FALSE)
+test <- read.csv("input/test.csv",stringsAsFactors = FALSE)
 
-## Structure of the data {.tabset}
-The housing data set has `r dim(train)[1]` rows and `r dim(train)[2]` features with the target feature Sale Price.
-Note the structure of the data in the next tab - treating all factors as characters for now. 
+setDT(train)
+setDT(test)
 
-### Dimensions
-```{r}
-dim(train)
-DT::datatable(head(train))
-```
-
-
-### Structure
-```{r structure}
-# Dimensions
+# Size and structure of data sets
 dim(train)
 
-# Structure
+# Notice 'test' has one fewer features - SalePrice
+dim(test)
+
 str(train)
 ```
 
-## Missing Values
+## Data pre-processing
 
 ```{r}
-# Count NAs
-na_counts <-lapply(train, function(x) sum(is.na(x)))
+## Save Id Columns because they will be dropped form data-set. Id can't be used as a predictor variable.
+train_Id <- train$Id
+test_Id <- test$Id
 
-na_counts <- melt(na_counts)
-
-names(na_counts) <- c("Number_NAs", "Attribute")
-na_counts <- na_counts[which(na_counts$Number_NAs > 0),]
-
-na_counts$Percent_NA <- na_counts$Number_NAs/dim(train)[1]
-na_counts <- na_counts[order(-na_counts$Number_NAs),]
-
-DT::datatable((na_counts))
+## add SalePrice to test data set. 
+test$SalePrice <- NA
 ```
 
+A scatterplot between SalePrice and GrLivArea shows a couple of outliers.
 
-
-PoolQC, MiscFeature, Alley, and Fence have over 50% of data missing in training set. Most likely, I am going to remove those features completley. For the remainder, I am going to impute values. 
-
-```{r missing data_2}
-ggplot(na_counts, aes(na_counts$Attribute, na_counts$Number_NAs)) +
-  geom_point(shape = 22, colour = "black", fill = "white", size = 2, stroke = 5) + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-```
-
-## Count Duplicates
 ```{r}
-dup_rows <- train[duplicated(train),]
+library(ggplot2)
+qplot(train$GrLivArea, train$SalePrice, main="With Outliers")
 ```
-There are `r dim(dup_rows)[1]` duplicated observations. 
+**Replacing Outliers** - 
 
-## Convert to Factors / Separate Fact from Numeric {.tabset}
-
-### Convert and Create
-Convert characters to factors and create training sets for catagorial and numerical data.
+Instead of removing outliers, I am replacing them with actual values.
 ```{r}
-train[,(cat_var) := lapply(.SD, as.factor), .SDcols = cat_var]
+# A function to cap outliers
+cap_outliers <- function(x){
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = T)
+  caps <- quantile(x, probs=c(.05, .95), na.rm = T)
+  H <- 1.5 * IQR(x, na.rm = T)
+  x[x < (qnt[1] - H)] <- caps[1]
+  x[x > (qnt[2] + H)] <- caps[2]
+  
+  return (x)
+}
 
-train_cat <- train[,.SD, .SDcols = cat_var]
-train_cont <- train[,.SD,.SDcols = numeric_var,]
+# numeric_df <- dplyr::select_if(train, is.numeric)
+train$GrLivArea <- cap_outliers(train$GrLivArea)
+train$SalePrice <- cap_outliers(train$SalePrice)
 ```
 
-### Structure
 ```{r}
-str(train)
+## Check again after removal.
+qplot(train$GrLivArea,train$SalePrice,main="Without Outliers")
 ```
 
-## Plot Bar/Histograms {.tabset}
+**Log Transformation of SalePrice Variable** - In order to make the distribution of the target variable normal, we need to transform it by taking log.
 
-### Numeric
-
-**Note* Create function to iterate next. **
 ```{r}
-train_cont[,1:6] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+## histogram of SalePrice - Right skewed
+qplot(SalePrice, data = train, bins = 100, main = "Right skewed distribution")
 
-train_cont[,7:12] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+## Log transformation of the target variable
+train$SalePrice <- log(train$SalePrice + 1)
 
-train_cont[,13:18] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-train_cont[,19:24] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-train_cont[,25:32] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-train_cont[,33:38] %>%
-  purrr::keep(is.numeric) %>%
-  gather() %>% 
-  ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram() +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
+## Normal distribution after transformation
+qplot(SalePrice,data=train,bins=100,main="Normal distribution after log transformation")
 ```
 
-### Catagorical
+**Combine train and test datasets**.
+
 ```{r}
-train_cat[, 1:6] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+## Combine train and test
+full_data <- rbind(train,test)
+setDT(full_data)
 
-train_cat[, 7:12] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-train_cat[, 13:18] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-train_cat[, 19:24] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-train_cat[, 25:32] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-train_cat[, 33:38] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-train_cat[, 38:43] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-train_cat[, 1:6] %>%
-  gather() %>% 
-  ggplot(aes(value)) + stat_count() +
-    facet_wrap(~ key, scales = "free") +   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
+## "Id" unnecessary for prediction
+full_data <- full_data[,c("Id") := NULL]
 ```
 
-### Missing Data2
-This plot shows the intersection of missing data as well as the populations of missing data.
+# Data Processing and Analysis
+
+## Checking Missing data
+
+Showing the percent of missing data.
 ```{r}
-library(naniar)
-library(UpSetR)
-var_w_miss_data <- n_var_miss(train)
-
-train %>%
-  as_shadow_upset() %>%
-  upset()
+## Percent of NAs per feature
+na_counts <- colSums(is.na(full_data)/dim(full_data)[1] * 100)
+na_counts_high <- na_counts[na_counts > 50]
 ```
 
+
+## Imputing Missing data
+
+We will be handling each variable separately. 
+
+1. For most of the **categorical features**, NA values will be imputed as **'None'**, because referring to the **data_description.txt** file, **the NA of these variables represent values such as 'No Garage','No Basement', etc.**
+
+2. For most of the **numerical features**, NA values will be replaced by 0, for variables like GarageArea, GarageCars, etc.
+
+3. For some categorical features like Functional and Electrical, the NA values will be replaced by the most frequently occuring value for that variable.
+
+4. Imputing *MSZoning* based on mode of the *Neighborhood* it's in. 
+
+
+```{r}
+## For these features only, fill NA with "None" 
+none_vars <- c("Alley","PoolQC","MiscFeature","Fence","FireplaceQu",
+               "GarageType","GarageFinish","GarageQual","GarageCond",
+               "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", 
+               "BsmtFinType2", "MasVnrType")
+
+full_data[, (none_vars) := lapply(.SD, function(x) {ifelse(is.na(x), "None", x)}), .SDcols = none_vars]
+
+
+#Group by neighborhood and fill in missing value by the median LotFrontage of all the neighborhood
+temp <- aggregate(LotFrontage~Neighborhood,data = full_data, median)
+temp2 <- c()
+for(str in full_data$Neighborhood[is.na(full_data$LotFrontage)]) {
+  temp2 <- c(temp2,which(temp$Neighborhood == str))
+  }
+
+full_data$LotFrontage[is.na(full_data$LotFrontage)]=temp[temp2,2]
+
+## Replacing missing data with 0
+zero_vars <- c('GarageYrBlt', 'GarageArea', 'GarageCars','BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF','TotalBsmtSF', 'BsmtFullBath', 'BsmtHalfBath',"MasVnrArea")
+full_data[, (zero_vars) := lapply(.SD, function(x) {ifelse(is.na(x), 0, x)}), .SDcols = none_vars]
+
+## Replace missing MSZoning values by mode of neighborhood
+Mode <- function(x) {
+  ux <- unique(x)
+  x <- ux[which.max(tabulate(match(x, ux)))]
+}
+
+mode_vars = c("MSZoning")
+full_data[, (mode_vars) := lapply(.SD,  function(x) replace(x,
+     which(is.na(x)), mode(x))), by = Neighborhood,.SDcols=mode_vars]
+
+## STOPPING POINT FOR THE NIGHT. 
+##################################################################################
+
+```
