@@ -204,9 +204,9 @@ full_data$MoSold <- as.character(full_data$MoSold)
 
 ## Label Encoding some categorical variables that may contain information in their ordering set
 
-**We will also specify the order of the levels (mapping), while label encoding (converting categories to integer ranks - 1 to n) the categorical variables.**
+**We will also specify the order of the levels (mapping).**
 
-Use this if the categorical variables are in fact known to have ordered relations with the outcome.
+Use this if the categorical variables are in fact known to have ordered relations with the outcome.For example, one type of FireplaceQu might be considered better than another type. 
 ```{r}
 cols = c('FireplaceQu', 'BsmtQual', 'BsmtCond', 'GarageQual', 'GarageCond', 'ExterQual', 'ExterCond','HeatingQC', 'PoolQC', 'KitchenQual', 'BsmtFinType1', 'BsmtFinType2', 'Functional', 'Fence', 'BsmtExposure', 'GarageFinish', 'LandSlope','LotShape', 'PavedDrive', 'Street', 'Alley', 'CentralAir', 'MSSubClass', 'OverallCond', 'YrSold', 'MoSold')
 
@@ -253,6 +253,5 @@ label_encoder = function(vec){
     }
 }
 
-### NOT WORKING YET - How do I lapply with a function that returns a function. TBC.
-full_data[, (cols) := lapply(.SD, lapply(.SD, label_encoder)), .SDcols = cols]
+full_data[, (cols) := mapply(match, .SD, cust_levels, SIMPLIFY = FALSE), .SDcols = cols]
 ```
