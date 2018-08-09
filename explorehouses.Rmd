@@ -176,7 +176,83 @@ mode_vars = c("MSZoning")
 full_data[, (mode_vars) := lapply(.SD,  function(x) replace(x,
      which(is.na(x)), mode(x))), by = Neighborhood,.SDcols=mode_vars]
 
-## STOPPING POINT FOR THE NIGHT. 
-##################################################################################
+## Replace missing Functional values with "Typ"
+full_data$Functional[is.na(full_data$Functional)]="Typ"
 
+## Replace missing Electrical values with "SBrkr"
+full_data$Electrical[is.na(full_data$Electrical)]="SBrkr"
+
+## Replace missing KitchenQual values by "TA"
+full_data$KitchenQual[is.na(full_data$KitchenQual)]="TA"
+
+## Replace missing SaleType values by "WD"
+full_data$SaleType[is.na(full_data$SaleType)]="WD"
+
+## Replace missing Exterior1st and Exterior2nd values by "VinylSd"
+full_data$Exterior1st[is.na(full_data$Exterior1st)]="VinylSd"
+full_data$Exterior2nd[is.na(full_data$Exterior2nd)]="VinylSd"
+
+## All NAs should be gone, except the test portion of SalePrice variable, which we ourselves had initialized to NA earlier.
+colSums(is.na(full_data))
+
+full_data$MSSubClass <- as.character(full_data$MSSubClass)
+full_data$OverallCond <- as.character(full_data$OverallCond)
+full_data$YrSold <- as.character(full_data$YrSold)
+full_data$MoSold <- as.character(full_data$MoSold)
+```
+
+
+## Label Encoding some categorical variables that may contain information in their ordering set
+
+**We will also specify the order of the levels (mapping), while label encoding (converting categories to integer ranks - 1 to n) the categorical variables.**
+
+Use this if the categorical variables are in fact known to have ordered relations with the outcome.
+```{r}
+cols = c('FireplaceQu', 'BsmtQual', 'BsmtCond', 'GarageQual', 'GarageCond', 'ExterQual', 'ExterCond','HeatingQC', 'PoolQC', 'KitchenQual', 'BsmtFinType1', 'BsmtFinType2', 'Functional', 'Fence', 'BsmtExposure', 'GarageFinish', 'LandSlope','LotShape', 'PavedDrive', 'Street', 'Alley', 'CentralAir', 'MSSubClass', 'OverallCond', 'YrSold', 'MoSold')
+
+FireplaceQu=c('None','Po','Fa','TA','Gd','Ex')
+BsmtQual=c('None','Po','Fa','TA','Gd','Ex')
+BsmtCond=c('None','Po','Fa','TA','Gd','Ex')
+GarageQual=c('None','Po','Fa','TA','Gd','Ex')
+GarageCond=c('None','Po','Fa','TA','Gd','Ex')
+ExterQual=c('Po','Fa','TA','Gd','Ex')
+ExterCond=c('Po','Fa','TA','Gd','Ex')
+HeatingQC=c('Po','Fa','TA','Gd','Ex')
+PoolQC=c('None','Fa','TA','Gd','Ex')
+KitchenQual=c('Po','Fa','TA','Gd','Ex')
+BsmtFinType1=c('None','Unf','LwQ','Rec','BLQ','ALQ','GLQ')
+BsmtFinType2=c('None','Unf','LwQ','Rec','BLQ','ALQ','GLQ')
+Functional=c('Sal','Sev','Maj2','Maj1','Mod','Min2','Min1','Typ')
+Fence=c('None','MnWw','GdWo','MnPrv','GdPrv')
+BsmtExposure=c('None','No','Mn','Av','Gd')
+GarageFinish=c('None','Unf','RFn','Fin')
+LandSlope=c('Sev','Mod','Gtl')
+LotShape=c('IR3','IR2','IR1','Reg')
+PavedDrive=c('N','P','Y')
+Street=c('Pave','Grvl')
+Alley=c('None','Pave','Grvl')
+MSSubClass=c('20','30','40','45','50','60','70','75','80','85','90','120','150','160','180','190')
+OverallCond=NA
+MoSold=NA
+YrSold=NA
+CentralAir=NA
+
+cust_levels <- list(FireplaceQu, BsmtQual, BsmtCond, GarageQual, GarageCond, ExterQual, ExterCond,HeatingQC, PoolQC, KitchenQual, BsmtFinType1, BsmtFinType2, Functional, Fence, BsmtExposure, GarageFinish, LandSlope,LotShape, PavedDrive, Street, Alley, CentralAir, MSSubClass, OverallCond, YrSold, MoSold)
+```
+
+I modified a function from [SO](https://stackoverflow.com/questions/38620424/label-encoder-functionality-in-r) to use previously defined levels to encode factors (rather than using sort() to determine levels).
+```{r}
+# https://stackoverflow.com/questions/38620424/label-encoder-functionality-in-r
+# function which returns function which will encode vectors with values  of 'vec' 
+lev_index = 1
+label_encoder = function(vec){
+    levels = cust_levels[[lev_index]]
+    lev_index = lev_index + 1
+    function(x){
+        match(x, levels)
+    }
+}
+
+### NOT WORKING YET - How do I lapply with a function that returns a function. TBC.
+full_data[, (cols) := lapply(.SD, lapply(.SD, label_encoder)), .SDcols = cols]
 ```
